@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aventura Cultural 🌍</title>
+  <style>
+    :root{
+      --bg1: #f0f9ff;
+      --card:#ffffff;
+      --accent:#4f46e5;
+      --accent-2:#10b981;
+      --muted:#6b7280;
+      --success:#16a34a;
+      --danger:#ef4444;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,var(--bg1),#ffffff);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:28px;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      width:100%;
+      max-width:960px;
+      background: var(--card);
+      border-radius:16px;
+      box-shadow: 0 8px 30px rgba(20,20,50,0.06);
+      padding:20px;
+      box-sizing:border-box;
+    }
+    header h1{margin:0;font-size:22px}
+    header p{margin:6px 0 16px;color:var(--muted)}
+    .menu {display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      padding:10px 14px;border-radius:10px;border:0;cursor:pointer;
+      font-weight:600;
+      box-shadow:0 2px 6px rgba(15,23,42,0.06);
+    }
+    .btn-primary{background:var(--accent);color:white;}
+    .btn-green{background:var(--accent-2);color:white;}
+    .btn-yellow{background:#f59e0b;color:white;}
+    .btn-ghost{background:#f3f4f6;color:#111}
+    .panel{
+      margin-top:18px;border-radius:12px;padding:14px;background:#fafafa;border:1px solid #f1f5f9
+    }
+    .question{font-size:18px;margin-bottom:12px}
+    .opts{display:grid;gap:8px}
+    .opt{
+      padding:12px;border-radius:10px;border:1px solid #e6e9ef;background:white;text-align:left;cursor:pointer;
+    }
+    .opt.selected{border-color:var(--accent);box-shadow:0 6px 18px rgba(79,70,229,0.08)}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--muted)}
+    .small{font-size:13px;color:var(--muted)}
+    .footer{margin-top:16px;font-size:13px;color:var(--muted);text-align:center}
+    .score-list{display:flex;flex-direction:column;gap:8px}
+    .score-item{display:flex;justify-content:space-between;padding:10px;border-radius:10px;border:1px solid #eef2ff;background:#fff}
+    input[name="playerName"]{padding:10px;border-radius:8px;border:1px solid #e5e7eb;width:100%;}
+    .row{display:flex;gap:8px}
+    @media(max-width:640px){
+      .row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app">
+    <header>
+      <h1>Aventura Cultural 🌍</h1>
+      <p>Prueba tus conocimientos sobre 5 países: República Dominicana, Estados Unidos, China, Japón e Italia.</p>
+    </header>
+
+    <!-- Menú principal -->
+    <div id="menuView">
+      <div class="menu">
+        <button class="btn btn-primary" id="startAdventureBtn">Empezar Aventura</button>
+        <button class="btn btn-green" id="globalScoreBtn">Puntuación Global</button>
+        <button class="btn btn-yellow" id="practiceBtn">Práctica</button>
+      </div>
+
+      <div class="panel">
+        <strong>Instrucciones rápidas</strong>
+        <ul class="small">
+          <li>La Aventura tiene 5 preguntas — una por país.</li>
+          <li>La Puntuación Global guarda tus mejores resultados en tu navegador (localStorage).</li>
+          <li>En Práctica puedes intentar preguntas sin afectar la puntuación global.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Aventura -->
+    <div id="adventureView" style="display:none">
+      <div class="meta"><div><strong id="qCounter">Pregunta 1/5</strong><div class="small" id="qCountry">País: —</div></div><div class="small">Puntuación: <span id="currentScore">0</span></div></div>
+
+      <div class="panel">
+        <div class="question" id="questionText">Pregunta aquí</div>
+        <div class="opts" id="optionsList"></div>
+        <div id="feedback" class="small" style="margin-top:10px"></div>
+      </div>
+
+      <div style="margin-top:12px" class="row">
+        <button class="btn btn-ghost" id="backToMenuFromAdventure">Volver al menú</button>
+      </div>
+    </div>
+
+    <!-- Práctica -->
+    <div id="practiceView" style="display:none">
+      <div class="meta"><div><strong>Práctica</strong><div class="small" id="practiceCountry">País: —</div></div></div>
+
+      <div class="panel">
+        <div class="question" id="practiceQuestion">Pregunta práctica</div>
+        <div class="opts" id="practiceOptions"></div>
+        <div id="practiceFeedback" class="small" style="margin-top:10px"></div>
+      </div>
+
+      <div style="margin-top:12px" class="row">
+        <button class="btn btn-ghost" id="backToMenuFromPractice">Volver al menú</button>
+        <button class="btn btn-primary" id="newPracticeBtn">Otra pregunta</button>
+      </div>
+    </div>
+
+    <!-- Resultado Aventura -->
+    <div id="resultView" style="display:none">
+      <div class="panel">
+        <h2 id="finalTitle">¡Aventura finalizada!</h2>
+        <p id="finalScoreText">Obtuviste X de 5 preguntas.</p>
+
+        <div style="margin-top:10px">
+          <label class="small">Guardar tu puntuación (opcional):</label>
+          <div class="row" style="margin-top:8px">
+            <input id="playerName" name="playerName" placeholder="Tu nombre (opcional)" />
+            <button class="btn btn-green" id="saveScoreBtn">Guardar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn btn-ghost" id="backToMenuFromResult">Volver al menú</button>
+          <button class="btn btn-primary" id="playAgainBtn">Volver a jugar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puntuaciones Globales -->
+    <div id="globalView" style="display:none">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2>Puntuación Global</h2>
+          <div>
+            <button class="btn btn-ghost" id="backToMenuFromGlobal">Volver al menú</button>
+            <button class="btn" id="clearScoresBtn" style="background:var(--danger);color:white">Borrar todo</button>
+          </div>
+        </div>
+
+        <div id="globalList" style="margin-top:12px" class="score-list"></div>
+        <div id="noScores" class="small" style="margin-top:8px;display:none">No hay puntuaciones guardadas aún.</div>
+      </div>
+    </div>
+
+    <div class="footer">Hecho con ❤️ — Dime si quieres más países o más preguntas.</div>
+  </div>
+
+  <script>
+    // ===== Banco de preguntas =====
+    const QUESTION_BANK = [
+      // República Dominicana
+      { country: "República Dominicana", question: "¿Cuál es el ritmo musical originario y emblemático de República Dominicana?", options:["Merengue","Samba","Tango","Reggae"], answer:0 },
+      { country: "República Dominicana", question: "¿Cómo se llama la ciudad capital de República Dominicana?", options:["Santo Domingo","Santiago","La Vega","Puerto Plata"], answer:0 },
+
+      // Estados Unidos
+      { country: "Estados Unidos", question: "¿Cuál de estos símbolos es un monumento famoso de Estados Unidos?", options:["Torre Eiffel","Estatua de la Libertad","Coliseo","Big Ben"], answer:1 },
+      { country: "Estados Unidos", question: "¿Cuál es el idioma más hablado en Estados Unidos?", options:["Inglés","Español","Francés","Alemán"], answer:0 },
+
+      // China
+      { country: "China", question: "¿Qué gran construcción histórica se extiende por miles de kilómetros en China?", options:["La Gran Muralla","El Canal de Panamá","La Muralla de Adriano","La Vía Apia"], answer:0 },
+      { country: "China", question: "¿Cuál es una comida típica china muy conocida?", options:["Sushi","Tacos","Dumplings","Pasta"], answer:2 },
+
+      // Japón
+      { country: "Japón", question: "¿Cómo se llama el monte sagrado y símbolo de Japón, famoso por su forma cónica?", options:["Monte Fuji","Monte Kilimanjaro","Monte Blanc","Monte Etna"], answer:0 },
+      { country: "Japón", question: "¿Qué comida es originaria de Japón y consiste en arroz y pescado crudo?", options:["Paella","Sushi","Bibimbap","Ceviche"], answer:1 },
+
+      // Italia
+      { country: "Italia", question: "¿Qué ciudad italiana es famosa por sus canales y góndolas?", options:["Venecia","Roma","Milán","Florencia"], answer:0 },
+      { country: "Italia", question: "¿Cuál es un plato italiano muy conocido a base de pasta y salsa de tomate?", options:["Sushi","Pizza","Tacos","Paella"], answer:1 },
+    ];
+
+    // ===== Variables de estado =====
+    let view = 'menu'; // menu, adventure, practice, result, global
+    let adventureQuestions = [];
+    let currentIndex = 0;
+    let currentScore = 0;
+    let selectedOption = null;
+    let practiceQ = null;
+    const LOCAL_KEY = 'aventura_cultural_scores_v1'; // almacenamiento local
+
+    // ===== Helpers DOM =====
+    const el = id => document.getElementById(id);
+
+    // Mejor control de vistas:
+    function setView(v){
+      view = v;
+      // hide all specific views
+      ['menuView','adventureView','practiceView','resultView','globalView'].forEach(id => document.getElementById(id).style.display = 'none');
+      if(v==='menu') document.getElementById('menuView').style.display = '';
+      if(v==='adventure') document.getElementById('adventureView').style.display = '';
+      if(v==='practice') document.getElementById('practiceView').style.display = '';
+      if(v==='result') document.getElementById('resultView').style.display = '';
+      if(v==='global') { document.getElementById('globalView').style.display = ''; renderGlobalList(); }
+    }
+
+    // ===== Lógica Aventura =====
+    function pickAdventureQuestions(){
+      const countries = ["República Dominicana","Estados Unidos","China","Japón","Italia"];
+      const picked = countries.map(c => {
+        const pool = QUESTION_BANK.filter(q => q.country === c);
+        return pool[Math.floor(Math.random()*pool.length)];
+      });
+      return picked;
+    }
+
+    function startAdventure(){
+      adventureQuestions = pickAdventureQuestions();
+      currentIndex = 0;
+      currentScore = 0;
+      selectedOption = null;
+      el('currentScore').textContent = currentScore;
+      renderCurrentQuestion();
+      setView('adventure');
+    }
+
+    function renderCurrentQuestion(){
+      const q = adventureQuestions[currentIndex];
+      el('qCounter').textContent = `Pregunta ${currentIndex+1}/${adventureQuestions.length}`;
+      el('qCountry').textContent = `País: ${q.country}`;
+      el('questionText').textContent = q.question;
+      const opts = el('optionsList');
+      opts.innerHTML = '';
+      el('feedback').textContent = '';
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.textContent = opt;
+        btn.onclick = () => chooseAnswer(i, q, false);
+        opts.appendChild(btn);
+      });
+    }
+
+    function chooseAnswer(i, q, isPractice){
+      if(isPractice){
+        // practice mode immediate feedback
+        const ok = i === q.answer;
+        el('practiceFeedback').textContent = ok ? '¡Correcto!' : `Incorrecto. La respuesta correcta es: ${q.options[q.answer]}`;
+        return;
+      }
+      // adventure mode
+      if(selectedOption !== null) return; // prevenir multiples
+      selectedOption = i;
+      const opts = document.querySelectorAll('#optionsList .opt');
+      opts.forEach((b, idx) => { if(idx===i) b.classList.add('selected'); });
+      const correct = i === q.answer;
+      if(correct) currentScore++;
+      el('currentScore').textContent = currentScore;
+      el('feedback').textContent = correct ? '¡Correcto!' : `Incorrecto. La respuesta correcta es: ${q.options[q.answer]}`;
+      // avanzar automáticamente a la siguiente después de 900ms
+      setTimeout(() => {
+        selectedOption = null;
+        const next = currentIndex + 1;
+        if(next >= adventureQuestions.length){
+          // terminar
+          showResult();
+        } else {
+          currentIndex = next;
+          renderCurrentQuestion();
+        }
+      }, 900);
+    }
+
+    function showResult(){
+      el('finalScoreText').textContent = `Obtuviste ${currentScore} de ${adventureQuestions.length} preguntas.`;
+      setView('result');
+    }
+
+    // ===== Guardar / Mostrar puntuaciones globales =====
+    function loadGlobal(){
+      try{
+        const raw = localStorage.getItem(LOCAL_KEY);
+        return raw ? JSON.parse(raw) : [];
+      }catch(e){ return []; }
+    }
+    function saveGlobal(list){
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+    }
+    function renderGlobalList(){
+      const list = loadGlobal();
+      const container = el('globalList'); container.innerHTML = '';
+      if(!list || list.length===0){ el('noScores').style.display='block'; return; }
+      el('noScores').style.display='none';
+      list.forEach((e, idx) => {
+        const item = document.createElement('div'); item.className='score-item';
+        item.innerHTML = `<div><div style="font-weight:600">${escapeHtml(e.name)}</div><div class="small">${new Date(e.date).toLocaleString()}</div></div><div style="font-size:18px;font-weight:700">${e.score}</div>`;
+        container.appendChild(item);
+      });
+    }
+
+    function saveScore(){
+      const name = (el('playerName').value || 'Jugador anónimo').trim();
+      const entry = { name, score: currentScore, date: new Date().toISOString() };
+      const list = loadGlobal();
+      list.push(entry);
+      // ordenar por puntuación descendente y conservar top 50
+      list.sort((a,b) => b.score - a.score || new Date(b.date) - new Date(a.date));
+      saveGlobal(list.slice(0,50));
+      el('playerName').value = '';
+      setView('global');
+    }
+
+    function clearScores(){
+      if(!confirm('¿Borrar todas las puntuaciones globales?')) return;
+      saveGlobal([]);
+      renderGlobalList();
+    }
+
+    // ===== Práctica =====
+    function startPractice(){
+      const q = QUESTION_BANK[Math.floor(Math.random()*QUESTION_BANK.length)];
+      practiceQ = q;
+      el('practiceCountry').textContent = `País: ${q.country}`;
+      el('practiceQuestion').textContent = q.question;
+      const opts = el('practiceOptions'); opts.innerHTML=''; el('practiceFeedback').textContent='';
+      q.options.forEach((opt,i) => {
+        const btn = document.createElement('button'); btn.className='opt'; btn.textContent = opt;
+        btn.onclick = () => chooseAnswer(i, q, true);
+        opts.appendChild(btn);
+      });
+      setView('practice');
+    }
+
+    // ===== Utilidades =====
+    function escapeHtml(text){
+      return text.replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+    }
+
+    // ===== Eventos DOM =====
+    document.getElementById('startAdventureBtn').addEventListener('click', startAdventure);
+    document.getElementById('globalScoreBtn').addEventListener('click', () => setView('global'));
+    document.getElementById('practiceBtn').addEventListener('click', startPractice);
+
+    document.getElementById('backToMenuFromAdventure').addEventListener('click', () => setView('menu'));
+    document.getElementById('backToMenuFromPractice').addEventListener('click', () => setView('menu'));
+    document.getElementById('backToMenuFromResult').addEventListener('click', () => setView('menu'));
+    document.getElementById('backToMenuFromGlobal').addEventListener('click', () => setView('menu'));
+
+    document.getElementById('playAgainBtn').addEventListener('click', startAdventure);
+    document.getElementById('saveScoreBtn').addEventListener('click', saveScore);
+    document.getElementById('clearScoresBtn').addEventListener('click', clearScores);
+    document.getElementById('newPracticeBtn').addEventListener('click', startPractice);
+
+    // inicializar vista
+    setView('menu');
+  </script>
+</body>
+</html>
